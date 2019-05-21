@@ -1,4 +1,4 @@
-package main
+package tls
 
 type CertificateGenerator interface {
 	Generate(GenerateRequest) (*GenerateResponse, error)

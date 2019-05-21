@@ -1,4 +1,4 @@
-package main
+package tls
 
 type CertificateDoesNotExistErr struct {
 	CommonName string
