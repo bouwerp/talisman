@@ -1,4 +1,4 @@
-package tls
+package talisman
 
 import (
 	"crypto/ecdsa"

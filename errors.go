@@ -1,4 +1,4 @@
-package tls
+package talisman
 
 type CertificateDoesNotExistErr struct {
 	CommonName string

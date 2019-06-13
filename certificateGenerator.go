@@ -1,4 +1,4 @@
-package tls
+package talisman
 
 type CertificateGenerator interface {
 	Generate(GenerateRequest) (*GenerateResponse, error)

@@ -1,9 +1,9 @@
-# tls
+# Talisman
 
 Go library for managing TLS certificates. Currently, only a self-signed certificate
 implementation exists.
 
-# Example
+## Example
 
 An example of using the certificate generator and manager is shown in the following example.
 
