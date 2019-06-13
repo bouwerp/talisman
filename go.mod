@@ -1,4 +1,4 @@
-module github.com/bouwerp/tls
+module github.com/bouwerp/talisman
 
 go 1.12
 
