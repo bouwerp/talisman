@@ -53,6 +53,7 @@ func QuickGenerateCerts(conf *QuickGenerateConfig) (*tls.Certificate, error) {
 	generateResponse, err := certGen.Generate(GenerateRequest{
 		CommonName: host,
 		AdminEmail: adminEmail,
+		Algorithm:  RSA,
 	})
 	if err != nil {
 		switch err.(type) {

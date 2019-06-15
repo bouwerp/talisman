@@ -20,9 +20,15 @@ type RenewRequest struct {
 type RenewResponse struct {
 }
 
+type AlgorithmType string
+
+const ECDSA AlgorithmType = "ECDSA"
+const RSA AlgorithmType = "RSA"
+
 type GenerateRequest struct {
 	CommonName string
 	AdminEmail string
+	Algorithm  AlgorithmType
 }
 
 type GenerateResponse struct {

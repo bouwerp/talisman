@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"github.com/bouwerp/log"
 	"math/big"
 	"os"
@@ -72,12 +73,6 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		return nil, KeyExistsErr{CommonName: request.CommonName}
 	}
 
-	key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
-	if err != nil {
-		log.Error("failed to generate private key:", err)
-		return nil, err
-	}
-
 	notBefore := time.Now()
 	notAfter := notBefore.Add(c.CertificateValidity)
 
@@ -111,13 +106,38 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 	template.KeyUsage |= x509.KeyUsageCertSign
 	template.KeyUsage |= x509.KeyUsageCRLSign
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-
-	if err != nil {
-		log.Error("failed to create certificate:", err)
-		return nil, err
+	// select the algorithm for the private key based on the request
+	var key interface{}
+	var derBytes []byte
+	switch request.Algorithm {
+	case ECDSA:
+		key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		if err != nil {
+			log.Error("failed to generate ECDSA private key:", err)
+			return nil, err
+		}
+		derBytes, err = x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+		if err != nil {
+			log.Error("failed to generate ECDSA certificate:", err)
+			return nil, err
+		}
+	case RSA:
+		key, err := rsa.GenerateKey(rand.Reader, 4096)
+		if err != nil {
+			log.Error("failed to generate RSA private key:", err)
+			return nil, err
+		}
+		derBytes, err = x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+		if err != nil {
+			log.Error("failed to generate RSA certificate:", err)
+			return nil, err
+		}
+	default:
+		// TODO typed error
+		return nil, errors.New("unsupported algorithm")
 	}
 
+	// generate the certificate and key files
 	certOut, err := os.Create(certPath)
 	if err != nil {
 		log.Error("failed to open cert for writing:", err)
