@@ -107,8 +107,8 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 	template.KeyUsage |= x509.KeyUsageCRLSign
 
 	// select the algorithm for the private key based on the request
-	var key interface{}
-	var derBytes []byte
+	var theKey interface{}
+	var theDerBytes []byte
 	switch request.Algorithm {
 	case ECDSA:
 		key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
@@ -116,22 +116,26 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 			log.Error("failed to generate ECDSA private key:", err)
 			return nil, err
 		}
-		derBytes, err = x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+		derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
 		if err != nil {
 			log.Error("failed to generate ECDSA certificate:", err)
 			return nil, err
 		}
+		theKey = key
+		theDerBytes = derBytes
 	case RSA:
 		key, err := rsa.GenerateKey(rand.Reader, 4096)
 		if err != nil {
 			log.Error("failed to generate RSA private key:", err)
 			return nil, err
 		}
-		derBytes, err = x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+		derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
 		if err != nil {
 			log.Error("failed to generate RSA certificate:", err)
 			return nil, err
 		}
+		theKey = key
+		theDerBytes = derBytes
 	default:
 		// TODO typed error
 		return nil, errors.New("unsupported algorithm")
@@ -143,7 +147,7 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		log.Error("failed to open cert for writing:", err)
 		return nil, err
 	}
-	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
+	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: theDerBytes}); err != nil {
 		log.Error("failed to write data to cert:", err)
 		return nil, err
 	}
@@ -156,7 +160,7 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		log.Error("failed to open key for writing:", err)
 		return nil, err
 	}
-	pemBlock, err := pemBlockForKey(key)
+	pemBlock, err := pemBlockForKey(theKey)
 	if err != nil {
 		log.Error("failed to get pem key block:", err)
 		return nil, err
