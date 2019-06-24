@@ -33,6 +33,7 @@ func (c SelfSignedCertificateGenerator) Revoke(RevokeRequest) (*RevokeResponse, 
 func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*GenerateResponse, error) {
 	// create certs directory
 	certBasePath := strings.TrimRight(c.CertificateBasePath, string(os.PathSeparator))
+	DebugVerbose("creating certs directory in " + certBasePath)
 	_, err := os.Stat(certBasePath)
 	if err != nil {
 		if (err.(*os.PathError)).Err == syscall.ENOENT {
@@ -48,28 +49,36 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		}
 	}
 	certPath := strings.Join([]string{certBasePath, request.CommonName + ".pem"}, string(os.PathSeparator))
+	DebugVerbose("cert path: " + certPath)
 	keyPath := strings.Join([]string{certBasePath, request.CommonName + "-key.pem"}, string(os.PathSeparator))
+	DebugVerbose("key path: " + keyPath)
 
+	DebugVerbose("checking if cert exists")
 	_, err = os.Stat(certPath)
 	if err != nil {
 		if (err.(*os.PathError)).Err == syscall.ENOENT {
 			// should't exist
+			DebugVerbose("cert does not exist")
 		} else {
 			log.Error("could not create public key:", err)
 			return nil, err
 		}
 	} else {
+		DebugVerbose("cert exists")
 		return nil, CertificateExistsErr{CommonName: request.CommonName}
 	}
+	DebugVerbose("checking if key exists")
 	_, err = os.Stat(keyPath)
 	if err != nil {
 		if (err.(*os.PathError)).Err == syscall.ENOENT {
 			// should't exist
+			DebugVerbose("key does not exist")
 		} else {
 			log.Error("could not create private key:", err)
 			return nil, err
 		}
 	} else {
+		DebugVerbose("key exists")
 		return nil, KeyExistsErr{CommonName: request.CommonName}
 	}
 
@@ -77,11 +86,13 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 	notAfter := notBefore.Add(c.CertificateValidity)
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	DebugVerbose("creating serial number with limit " + serialNumberLimit.String())
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		log.Error("failed to generate serial number:", err)
 		return nil, err
 	}
+	DebugVerbose("serial number: " + serialNumber.String())
 
 	template := x509.Certificate{
 		DNSNames:     []string{request.CommonName},
@@ -111,11 +122,13 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 	var theDerBytes []byte
 	switch request.Algorithm {
 	case ECDSA:
+		DebugVerbose("generating ECDSA key")
 		key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 		if err != nil {
 			log.Error("failed to generate ECDSA private key:", err)
 			return nil, err
 		}
+		DebugVerbose("creating cert")
 		derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
 		if err != nil {
 			log.Error("failed to generate ECDSA certificate:", err)
@@ -124,11 +137,13 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		theKey = key
 		theDerBytes = derBytes
 	case RSA:
+		DebugVerbose("generating RSA key")
 		key, err := rsa.GenerateKey(rand.Reader, 4096)
 		if err != nil {
 			log.Error("failed to generate RSA private key:", err)
 			return nil, err
 		}
+		DebugVerbose("creating cert")
 		derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
 		if err != nil {
 			log.Error("failed to generate RSA certificate:", err)
@@ -142,11 +157,13 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 	}
 
 	// generate the certificate and key files
+	DebugVerbose("opening cert file for writing")
 	certOut, err := os.Create(certPath)
 	if err != nil {
 		log.Error("failed to open cert for writing:", err)
 		return nil, err
 	}
+	DebugVerbose("encoding PEM cert")
 	if err := pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: theDerBytes}); err != nil {
 		log.Error("failed to write data to cert:", err)
 		return nil, err
@@ -155,16 +172,19 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		log.Error("error closing cert:", err)
 	}
 
+	DebugVerbose("opening key for writing")
 	keyOut, err := os.OpenFile(keyPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		log.Error("failed to open key for writing:", err)
 		return nil, err
 	}
+	DebugVerbose("creating PEM block for key")
 	pemBlock, err := pemBlockForKey(theKey)
 	if err != nil {
 		log.Error("failed to get pem key block:", err)
 		return nil, err
 	}
+	DebugVerbose("encoding PEM key")
 	if err := pem.Encode(keyOut, pemBlock); err != nil {
 		log.Error("failed to write data to key:", err)
 		return nil, err

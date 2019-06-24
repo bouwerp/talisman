@@ -87,3 +87,11 @@ func QuickGenerateCerts(conf *QuickGenerateConfig) (*tls.Certificate, error) {
 
 	return &c, err
 }
+
+var Verbose bool
+
+func DebugVerbose(msg interface{}) {
+	if Verbose {
+		log.Debug(msg)
+	}
+}
