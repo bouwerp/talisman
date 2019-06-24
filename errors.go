@@ -39,3 +39,10 @@ type KeyTypeNotSupportedErr struct {
 func (e KeyTypeNotSupportedErr) Error() string {
 	return "private key type '" + e.Type + "' not supported"
 }
+
+type InvalidKeySizeError struct {
+}
+
+func (e InvalidKeySizeError) Error() string {
+	return "invalid key size for algorithm"
+}

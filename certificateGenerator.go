@@ -29,6 +29,7 @@ type GenerateRequest struct {
 	CommonName string
 	AdminEmail string
 	Algorithm  AlgorithmType
+	KeySize    int
 }
 
 type GenerateResponse struct {

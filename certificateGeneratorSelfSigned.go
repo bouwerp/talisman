@@ -123,7 +123,12 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 	switch request.Algorithm {
 	case ECDSA:
 		DebugVerbose("generating ECDSA key")
-		key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+		curve, err := determineECDSACurve(request.KeySize)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		key, err := ecdsa.GenerateKey(curve, rand.Reader)
 		if err != nil {
 			log.Error("failed to generate ECDSA private key:", err)
 			return nil, err
@@ -138,7 +143,7 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		theDerBytes = derBytes
 	case RSA:
 		DebugVerbose("generating RSA key")
-		key, err := rsa.GenerateKey(rand.Reader, 4096)
+		key, err := rsa.GenerateKey(rand.Reader, request.KeySize)
 		if err != nil {
 			log.Error("failed to generate RSA private key:", err)
 			return nil, err
@@ -197,6 +202,22 @@ func (c SelfSignedCertificateGenerator) Generate(request GenerateRequest) (*Gene
 		KeyPath:  keyPath,
 		CertPath: certPath,
 	}, nil
+}
+
+// determineECDSACurve returns the correct curve for a given ECDSA key size.
+func determineECDSACurve(keySize int) (elliptic.Curve, error) {
+	switch keySize {
+	case 224:
+		return elliptic.P224(), nil
+	case 256:
+		return elliptic.P256(), nil
+	case 384:
+		return elliptic.P384(), nil
+	case 521:
+		return elliptic.P521(), nil
+	default:
+		return nil, InvalidKeySizeError{}
+	}
 }
 
 func pemBlockForKey(key interface{}) (*pem.Block, error) {

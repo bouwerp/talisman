@@ -11,6 +11,7 @@ type QuickGenerateConfig struct {
 	AdminEmail     string
 	ValidityPeriod time.Duration
 	CertDir        string
+	KeySize        int
 }
 
 // QuickGenerateCerts utilises the self-signed certificate generator and certificate manager to generate
@@ -19,11 +20,13 @@ type QuickGenerateConfig struct {
 func QuickGenerateCerts(conf *QuickGenerateConfig) (*tls.Certificate, error) {
 	var host, certBasePath, adminEmail string
 	var validityPeriod time.Duration
+	var keySize int
 	if conf != nil {
 		host = conf.Host
 		certBasePath = conf.CertDir
 		adminEmail = conf.AdminEmail
 		validityPeriod = conf.ValidityPeriod
+		keySize = conf.KeySize
 	}
 	if host == "" {
 		host = "localhost"
@@ -36,6 +39,9 @@ func QuickGenerateCerts(conf *QuickGenerateConfig) (*tls.Certificate, error) {
 	}
 	if validityPeriod == 0 {
 		validityPeriod = 180 * 24 * time.Hour
+	}
+	if keySize == 0 {
+		keySize = 2048
 	}
 
 	// self-signed certificate generator
@@ -54,6 +60,7 @@ func QuickGenerateCerts(conf *QuickGenerateConfig) (*tls.Certificate, error) {
 		CommonName: host,
 		AdminEmail: adminEmail,
 		Algorithm:  RSA,
+		KeySize:    keySize,
 	})
 	if err != nil {
 		switch err.(type) {
