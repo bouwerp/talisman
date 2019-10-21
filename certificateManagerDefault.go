@@ -6,7 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
-	"github.com/bouwerp/log"
+	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -26,39 +26,39 @@ func (c DefaultCertificateManager) Inspect(request InspectRequest) (*InspectResp
 	DebugVerbose("opening cert file")
 	certFile, err := os.Open(certPath)
 	if err != nil {
-		log.Error("could not load certificate:", err)
+		log.Error().Err(err).Msgf("could not load certificate:")
 		return nil, err
 	}
 	DebugVerbose("opening key file")
 	keFile, err := os.Open(keyPath)
 	if err != nil {
-		log.Error("could not load key:", err)
+		log.Error().Err(err).Msgf("could not load key:")
 		return nil, err
 	}
 
 	DebugVerbose("reading cert")
 	certBytes, err := ioutil.ReadAll(certFile)
 	if err != nil {
-		log.Error("could not read certificate:", err)
+		log.Error().Err(err).Msgf("could not read certificate:")
 		return nil, err
 	}
 	DebugVerbose("reading key")
 	keyBytes, err := ioutil.ReadAll(keFile)
 	if err != nil {
-		log.Error("could not read key:", err)
+		log.Error().Err(err).Msgf("could not read key:")
 		return nil, err
 	}
 
 	DebugVerbose("decoding PEM cert")
 	certBlock, rest := pem.Decode(certBytes)
 	if len(rest) > 0 {
-		log.Error("malformed certificate")
+		log.Error().Err(err).Msgf("malformed certificate")
 		return nil, err
 	}
 	DebugVerbose("decoding PEM key")
 	keyBlock, rest := pem.Decode(keyBytes)
 	if len(rest) > 0 {
-		log.Error("malformed key")
+		log.Error().Err(err).Msgf("malformed key")
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (c DefaultCertificateManager) Inspect(request InspectRequest) (*InspectResp
 		var pk *ecdsa.PrivateKey
 		pk, err = x509.ParseECPrivateKey(keyBlock.Bytes)
 		if err != nil {
-			log.Error("could not parse key:", err)
+			log.Error().Err(err).Msgf("could not parse key:")
 			return nil, err
 		}
 		bitSize = pk.Params().BitSize
@@ -81,7 +81,7 @@ func (c DefaultCertificateManager) Inspect(request InspectRequest) (*InspectResp
 		var pk *rsa.PrivateKey
 		pk, err = x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
 		if err != nil {
-			log.Error("could not parse key:", err)
+			log.Error().Err(err).Msgf("could not parse key:")
 			return nil, err
 		}
 		bitSize = pk.Size()
@@ -94,7 +94,7 @@ func (c DefaultCertificateManager) Inspect(request InspectRequest) (*InspectResp
 	var cert *x509.Certificate
 	cert, err = x509.ParseCertificate(certBlock.Bytes)
 	if err != nil {
-		log.Error("could not parse certificate:", err)
+		log.Error().Err(err).Msgf("could not parse certificate:")
 		return nil, err
 	}
 

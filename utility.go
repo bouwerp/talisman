@@ -2,7 +2,7 @@ package talisman
 
 import (
 	"crypto/tls"
-	"github.com/bouwerp/log"
+	"github.com/rs/zerolog/log"
 	"time"
 )
 
@@ -70,11 +70,11 @@ func QuickGenerateCerts(conf *QuickGenerateConfig) (*tls.Certificate, error) {
 				return nil, err
 			}
 			if inspectResponse.Expiry.Before(time.Now()) || inspectResponse.Expiry.Equal(time.Now()) {
-				log.Debug("certificate for", host, "has expired")
+				log.Debug().Msgf("certificate for %s has expired", host)
 				// renew
 			} else if inspectResponse.Expiry.After(time.Now().Add(-7*24*time.Hour)) &&
 				inspectResponse.Expiry.Before(time.Now()) {
-				log.Debug("certificate for", host, "is expiring soon")
+				log.Debug().Msgf("certificate for %s is expiring soon", host)
 				// renew
 			}
 			keyPath = inspectResponse.KeyPath
@@ -99,6 +99,6 @@ var Verbose bool
 
 func DebugVerbose(msg interface{}) {
 	if Verbose {
-		log.Debug(msg)
+		log.Debug().Msgf("%v", msg)
 	}
 }
